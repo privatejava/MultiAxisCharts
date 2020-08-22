@@ -55,6 +55,7 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 
 	public static final int Y1_AXIS = 0;
 	public static final int Y2_AXIS = 1;
+	public static final int Y3_AXIS = 2;
 
 	public static final int NONE = -1;
 	public static final int DEGREE_NUM0 = 0;
@@ -68,17 +69,22 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 
 	private boolean hasY1AxisRegression;
 	private boolean hasY2AxisRegression;
+	private boolean hasY3AxisRegression;
 
 	private int y1AxisRegressionType;
 	private int y2AxisRegressionType;
+	private int y3AxisRegressionType;
 
 	public String y1RegressionSeriesColors[] = { "#f3622d", "#fba71b", "#57b757", "#41a9c9", "#4258c9", "#9a42c8",
 			"#c84164", "#888888" };
 	public String y2RegressionSeriesColors[] = { "#f3622d", "#fba71b", "#57b757", "#41a9c9", "#4258c9", "#9a42c8",
 			"#c84164", "#888888" };
+	public String y3RegressionSeriesColors[] = { "#f3622d", "#fba71b", "#57b757", "#41a9c9", "#4258c9", "#9a42c8",
+		"#c84164", "#888888" };
 
 	private ArrayList<Shape> y1RegressionLines = new ArrayList<>();
 	private ArrayList<Shape> y2RegressionLines = new ArrayList<>();
+	private ArrayList<Shape> y3RegressionLines = new ArrayList<>();
 
 	// to indicate which colors are being used for the series
 	private final BitSet colorBits = new BitSet(8);
@@ -179,6 +185,13 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 	/** Get the Y axis, by default it is along the left of the plot */
 	public Axis<Y> getY2Axis() {
 		return y2Axis;
+	}
+
+	private final Axis<Y> y3Axis;
+
+	/** Get the Y axis, by default it is along the left of the plot */
+	public Axis<Y> getY3Axis() {
+		return y3Axis;
 	}
 
 	/** MultiAxisCharts data */
@@ -551,6 +564,10 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 	 *            Y2 Axis for this XY chart
 	 */
 	public MultiAxisChart(Axis<X> xAxis, Axis<Y> y1Axis, Axis<Y> y2Axis) {
+		this(xAxis,y1Axis,y2Axis,null);
+	}
+
+	public MultiAxisChart(Axis<X> xAxis, Axis<Y> y1Axis, Axis<Y> y2Axis, Axis<Y> y3Axis) {
 		this.xAxis = xAxis;
 		if (xAxis.getSide() == null)
 			xAxis.setSide(Side.BOTTOM);
@@ -563,6 +580,10 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 		if (y2Axis != null && y2Axis.getSide() == null)
 			y2Axis.setSide(Side.RIGHT);
 
+		this.y3Axis = y3Axis;
+		if (y3Axis != null && y3Axis.getSide() == null)
+			y3Axis.setSide(Side.RIGHT);
+
 		if (y2Axis != null) {
 			y2Axis.visibleProperty().addListener(e -> {
 				layoutPlotChildren();
@@ -572,6 +593,17 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 				updateAxisRange();
 			});
 			getChartChildren().add(y2Axis);
+		}
+
+		if (y3Axis != null) {
+			y3Axis.visibleProperty().addListener(e -> {
+				layoutPlotChildren();
+			});
+
+			y3Axis.autoRangingProperty().addListener((ov, t, t1) -> {
+				updateAxisRange();
+			});
+			getChartChildren().add(y3Axis);
 		}
 
 		// RT-23123 autoranging leads to charts incorrect appearance.
@@ -1121,6 +1153,17 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 			}
 		}
 
+		if (hasY3AxisRegression) {
+			ObservableList<MultiAxisChart.Series<X, Y>> series = getData();
+			for (MultiAxisChart.Series<X, Y> s : series) {
+				Path p = calcRegression(s, MultiAxisChart.Y3_AXIS, y3AxisRegressionType);
+
+				if (p != null) {
+					y3RegressionLines.add(p);
+				}
+			}
+		}
+
 		int index = 0;
 		for (Shape s : y1RegressionLines) {
 			s.setStrokeWidth(2);
@@ -1141,6 +1184,9 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 
 		if (yAxisIndex == Y2_AXIS && y2Axis == null)
 			throw new NullPointerException("Y2 Axis is not defind.");
+
+		if (yAxisIndex == Y3_AXIS && y3Axis == null)
+			throw new NullPointerException("Y3 Axis is not defind.");
 
 		Axis yAxis = yAxisIndex == Y2_AXIS ? y2Axis : y1Axis;
 
@@ -1286,6 +1332,8 @@ public abstract class MultiAxisChart<X, Y> extends Chart {
 		if (yAxisIndex == Y2_AXIS && y2Axis == null)
 			throw new NullPointerException("Y2 Axis is not defind.");
 
+		if (yAxisIndex == Y3_AXIS && y3Axis == null)
+			throw new NullPointerException("Y3 Axis is not defind.");
 		ArrayList<Point> regressionPoints = new ArrayList<>();
 
 		double index = 0;
